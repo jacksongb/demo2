@@ -36,11 +36,36 @@ pipeline {
             steps {
                 echo '🧪 测试镜像...'
                 sh '''
+                    # 启动容器
                     docker run -d --name test-container -p 5000:5000 ${IMAGE_NAME}:${IMAGE_TAG}
-                    sleep 5
-                    curl -f http://localhost:5000/health || exit 1
-                    docker stop test-container
-                    docker rm test-container
+                    
+                    # 等待容器启动
+                    sleep 10
+                    
+                    # 检查容器是否在运行
+                    docker ps | grep test-container
+                    
+                    # 查看容器日志（调试用）
+                    docker logs test-container
+                    
+                    # 获取容器IP地址并测试
+                    CONTAINER_IP=$(docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" test-container)
+                    echo "Container IP: $CONTAINER_IP"
+                    
+                    # 通过容器IP访问
+                    curl -f http://${CONTAINER_IP}:5000/health || {
+                        echo "Container IP access failed, trying host network..."
+                        # 备选方案：使用host网络模式重新测试
+                        docker stop test-container
+                        docker rm test-container
+                        docker run -d --name test-container --network host ${IMAGE_NAME}:${IMAGE_TAG}
+                        sleep 5
+                        curl -f http://localhost:5000/health
+                    }
+                    
+                    # 清理测试容器
+                    docker stop test-container || true
+                    docker rm test-container || true
                 '''
             }
         }
@@ -53,6 +78,10 @@ pipeline {
         }
         failure {
             echo '❌ 构建失败！'
+            sh '''
+                docker stop test-container || true
+                docker rm test-container || true
+            '''
         }
         always {
             cleanWs()
