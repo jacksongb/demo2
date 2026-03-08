@@ -3,9 +3,7 @@ pipeline {
 
     environment {
         // 修改为你的GitHub仓库地址
-        GIT_REPO = 'https://github.com/your-username/demo2.git'
-        // Jenkins中配置的Git凭证ID
-        GIT_CREDENTIALS = 'github-credentials'
+        GIT_REPO = 'https://github.com/jacksongb/demo2.git'
         // Docker镜像名称
         IMAGE_NAME = 'python-web-demo'
         // Docker镜像标签（使用构建号）
@@ -13,12 +11,11 @@ pipeline {
     }
 
     stages {
+       stages {
         stage('Checkout') {
             steps {
-                echo '📌 从GitHub拉取代码...'
-                git credentialsId: "${GIT_CREDENTIALS}",
-                    url: "${GIT_REPO}",
-                    branch: 'main'
+                echo '📥 拉取代码...'
+                checkout scm
             }
         }
 
@@ -62,20 +59,6 @@ pipeline {
             }
         }
 
-        stage('Push Image') {
-            steps {
-                echo '📦 推送镜像到仓库...'
-                sh '''
-                    # 推送到Docker Hub或其他镜像仓库
-                    # 需要先配置Docker仓库凭证
-                    # docker login -u username -p password
-                    # docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                    # docker push ${IMAGE_NAME}:latest
-                    
-                    echo "镜像构建完成: ${IMAGE_NAME}:${IMAGE_TAG}"
-                '''
-            }
-        }
     }
 
     post {
