@@ -2,16 +2,12 @@ pipeline {
     agent any
 
     environment {
-        // 修改为你的GitHub仓库地址
         GIT_REPO = 'https://github.com/jacksongb/demo2.git'
-        // Docker镜像名称
         IMAGE_NAME = 'python-web-demo'
-        // Docker镜像标签（使用构建号）
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
-       stages {
         stage('Checkout') {
             steps {
                 echo '📥 拉取代码...'
@@ -23,12 +19,7 @@ pipeline {
             steps {
                 echo '🔍 检查代码...'
                 sh '''
-                    # 检查Python语法
                     python3 -m py_compile app.py || true
-                    
-                    # 可以添加更多代码检查工具
-                    # pip install flake8
-                    # flake8 app.py
                 '''
             }
         }
@@ -45,20 +36,14 @@ pipeline {
             steps {
                 echo '🧪 测试镜像...'
                 sh '''
-                    # 启动容器并测试
                     docker run -d --name test-container -p 5000:5000 ${IMAGE_NAME}:${IMAGE_TAG}
                     sleep 5
-                    
-                    # 健康检查
                     curl -f http://localhost:5000/health || exit 1
-                    
-                    # 清理测试容器
                     docker stop test-container
                     docker rm test-container
                 '''
             }
         }
-
     }
 
     post {
@@ -70,7 +55,6 @@ pipeline {
             echo '❌ 构建失败！'
         }
         always {
-            // 清理工作空间
             cleanWs()
         }
     }
